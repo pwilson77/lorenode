@@ -9,17 +9,24 @@ if [[ ! -d "$XMCP_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$XMCP_DIR/.venv/bin/activate" ]]; then
-  echo "xmcp virtualenv missing; run setup first"
-  exit 1
-fi
-
 if [[ ! -f "$XMCP_DIR/.env" ]]; then
   echo "xmcp .env missing; copy env.example to .env and fill credentials"
   exit 1
 fi
 
 cd "$XMCP_DIR"
+
+if [[ ! -f ".venv/bin/activate" ]]; then
+  echo "Creating xmcp virtualenv..."
+  python3 -m venv .venv
+fi
+
 # shellcheck disable=SC1091
 source .venv/bin/activate
+
+if ! python -c "import requests_oauthlib" >/dev/null 2>&1; then
+  echo "Installing xmcp dependencies..."
+  pip install -r requirements.txt
+fi
+
 python server.py

@@ -1,5 +1,14 @@
 let cachedXMcpContextPromise = null;
 
+function isEnabled(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 function parseToolPayload(toolResult) {
   const content = toolResult?.content || [];
   if (!Array.isArray(content) || content.length === 0) {
@@ -29,7 +38,7 @@ async function getXMcpContext() {
   }
 
   cachedXMcpContextPromise = (async () => {
-    if (process.env.X_MCP_ENABLED !== "true") {
+    if (!isEnabled(process.env.X_MCP_ENABLED)) {
       return null;
     }
 

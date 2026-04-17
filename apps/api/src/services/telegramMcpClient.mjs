@@ -1,5 +1,14 @@
 let cachedTelegramMcpContextPromise = null;
 
+function isEnabled(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 async function loadEnvFile(filePath) {
   try {
     const { readFile } = await import("node:fs/promises");
@@ -53,6 +62,26 @@ function getTelegramMcpWorkingDirectory(args) {
   }
 
   return null;
+}
+
+async function resolveTelegramLaunch(command, args) {
+  const { access } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const pythonLike = /^python(\d+(\.\d+)?)?$/i.test(command || "");
+  const scriptArg = Array.isArray(args) ? args[0] : null;
+
+  if (pythonLike && typeof scriptArg === "string" && scriptArg.endsWith("main.py")) {
+    const telegramDir = path.dirname(scriptArg);
+    const wrapperPath = path.join(path.dirname(telegramDir), "start-telegram-mcp.sh");
+    try {
+      await access(wrapperPath);
+      return { command: wrapperPath, args: [] };
+    } catch {
+      return { command, args };
+    }
+  }
+
+  return { command, args };
 }
 
 function mergeEnvWithNonEmptyOverrides(baseEnv, overrideEnv) {
@@ -141,7 +170,7 @@ async function getTelegramMcpContext() {
   }
 
   cachedTelegramMcpContextPromise = (async () => {
-    if (process.env.TELEGRAM_MCP_ENABLED !== "true") {
+    if (!isEnabled(process.env.TELEGRAM_MCP_ENABLED)) {
       return null;
     }
 
@@ -154,13 +183,14 @@ async function getTelegramMcpContext() {
     const args = process.env.TELEGRAM_MCP_ARGS
       ? process.env.TELEGRAM_MCP_ARGS.split(" ").filter(Boolean)
       : ["run", "main.py"];
+    const launch = await resolveTelegramLaunch(command, args);
     const workingDirectory = getTelegramMcpWorkingDirectory(args);
     const serverEnvFile = workingDirectory ? `${workingDirectory}/.env` : null;
     const serverEnv = serverEnvFile ? await loadEnvFile(serverEnvFile) : {};
 
     const transport = new StdioClientTransport({
-      command,
-      args,
+      command: launch.command,
+      args: launch.args,
       env: mergeEnvWithNonEmptyOverrides(serverEnv, process.env),
     });
 

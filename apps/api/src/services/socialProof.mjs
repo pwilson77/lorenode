@@ -1,6 +1,15 @@
 import { searchRecentPostsViaXMcp } from "./xMcpClient.mjs";
 import { searchGlobalMessagesViaTelegramMcp } from "./telegramMcpClient.mjs";
 
+function isEnabled(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 function hashToInt(input) {
   let hash = 0;
   for (let i = 0; i < input.length; i += 1) {
@@ -60,11 +69,13 @@ function buildSearchTerms({ ca, tokenSymbol, tokenName }) {
 }
 
 async function fetchXSignals({ ca, tokenSymbol, tokenName, lookbackSec }) {
-  const useXMcp = process.env.X_MCP_ENABLED === "true";
+  const useXMcp = isEnabled(process.env.X_MCP_ENABLED);
   const bearerToken =
     process.env.TWITTER_BEARER_TOKEN ||
     process.env.X_BEARER_TOKEN ||
     process.env.TWITTER_API_BEARER_TOKEN;
+  const xApiBaseUrl =
+    process.env.X_API_BASE_URL?.trim() || "https://api.x.com";
 
   if (!useXMcp && !bearerToken) {
     return {
@@ -101,7 +112,7 @@ async function fetchXSignals({ ca, tokenSymbol, tokenName, lookbackSec }) {
       }
 
       const response = await fetch(
-        `https://api.twitter.com/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=10&tweet.fields=created_at,public_metrics,lang&expansions=author_id&user.fields=username,verified,public_metrics,created_at`,
+        `${xApiBaseUrl}/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=10&tweet.fields=created_at,public_metrics,lang&expansions=author_id&user.fields=username,verified,public_metrics,created_at`,
         {
           headers: {
             authorization: `Bearer ${bearerToken}`,
@@ -310,7 +321,7 @@ async function fetchTelegramSignals({
   tokenName,
   lookbackSec,
 }) {
-  const useTelegramMcp = process.env.TELEGRAM_MCP_ENABLED === "true";
+  const useTelegramMcp = isEnabled(process.env.TELEGRAM_MCP_ENABLED);
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!useTelegramMcp && !botToken) {
     return {
@@ -532,8 +543,8 @@ function buildFallbackInfluencerMap(ca) {
       telegram_mentions: 0,
       unique_accounts: topPushers.length,
       data_source:
-        process.env.X_MCP_ENABLED === "true" ||
-        process.env.TELEGRAM_MCP_ENABLED === "true"
+        isEnabled(process.env.X_MCP_ENABLED) ||
+        isEnabled(process.env.TELEGRAM_MCP_ENABLED)
           ? "synthetic-fallback+mcp-configured"
           : "synthetic-fallback",
     },
@@ -608,7 +619,18 @@ export async function buildInfluencerMap({
     ...telegramSignals.pushers,
   ]);
   if (mergedPushers.length === 0) {
-    return buildFallbackInfluencerMap(ca);
+    const fallback = buildFallbackInfluencerMap(ca);
+    return {
+      ...fallback,
+      source_stats: {
+        x_mentions: xSignals.stats.mentions || 0,
+        telegram_mentions: telegramSignals.stats.mentions || 0,
+        unique_accounts: fallback.top_pushers.length,
+        data_source: [xSignals.stats.source, telegramSignals.stats.source].join(
+          "+",
+        ),
+      },
+    };
   }
 
   const avgAuth =

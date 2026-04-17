@@ -9,17 +9,24 @@ if [[ ! -d "$TG_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$TG_DIR/.venv/bin/activate" ]]; then
-  echo "telegram-mcp virtualenv missing; run setup first"
-  exit 1
-fi
-
 if [[ ! -f "$TG_DIR/.env" ]]; then
   echo "telegram-mcp .env missing; copy .env.example to .env and fill credentials"
   exit 1
 fi
 
 cd "$TG_DIR"
+
+if [[ ! -f ".venv/bin/activate" ]]; then
+  echo "Creating telegram-mcp virtualenv..."
+  python3 -m venv .venv
+fi
+
 # shellcheck disable=SC1091
 source .venv/bin/activate
+
+if ! python -c "import nest_asyncio" >/dev/null 2>&1; then
+  echo "Installing telegram-mcp dependencies..."
+  pip install -r requirements.txt
+fi
+
 python main.py
