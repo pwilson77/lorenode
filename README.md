@@ -22,7 +22,7 @@ The product direction is intentionally not a generic risk engine or trading copi
   - Evidence-based social intake from X and Telegram when credentials are configured
   - Genealogy classification + lore + viral score generation
   - Explainability fields for score transparency
-- A frontend component scaffold in `apps/web` with typed React/Tailwind components for rendering a shareable Culture Card.
+- A TypeScript React web app in `apps/web` for running and viewing Culture Cards against the local API.
 
 ## Project layout
 
@@ -33,7 +33,7 @@ The product direction is intentionally not a generic risk engine or trading copi
   - `src/services/genealogy.mjs`: Meme family classification
   - `src/services/socialProof.mjs`: Influencer proof aggregation
   - `src/services/viral.mjs`: Viral score computation
-- `apps/web`: React/Tailwind component architecture and types
+- `apps/web`: TypeScript React UI (Vite) and typed Culture Card components
 - `dependencies/mcp-servers`: local MCP server dependencies for development
   - `xmcp`: official X MCP server clone
   - `telegram-mcp`: Telegram MCP server clone
@@ -105,6 +105,42 @@ node src/index.mjs
 
 The API listens on `http://localhost:8787`.
 
+## Run the Web UI (TypeScript)
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+The web app runs on `http://localhost:5173` and proxies `/api/*` requests to the local API at `http://127.0.0.1:8787`.
+
+## Docker Deployment
+
+Build and run the web UI plus API:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- `web` on `http://localhost:5173`
+- `api` on `http://localhost:8787`
+
+To also start the X MCP sidecar:
+
+```bash
+docker compose --profile social up --build
+```
+
+Notes:
+
+- `apps/api/.env` is loaded into the API container via `env_file`.
+- `dependencies/mcp-servers/xmcp/.env` is loaded into the XMCP container when the `social` profile is enabled.
+- Telegram MCP is launched by the API container through the local wrapper script and uses the mounted `dependencies/mcp-servers/telegram-mcp/.env` file.
+- Telegram session state is persisted in a named Docker volume.
+
 ## Test the endpoint
 
 ```bash
@@ -125,6 +161,8 @@ The endpoint returns a `CultureCardResponse` with:
 
 - `token`: Real or synthetic metadata for the contract
 - `genealogy`: Meme family classification + confidence
+- `genealogy.launch_classification`: Original launch type (`original-launch`, `remix`, `revival`, `low-effort-derivative`)
+- `genealogy.originality`: Originality score, clone probability, creator-reuse signal, and heuristic breakdown
 - `lore`: 2-sentence origin story (LLM-generated or templated)
 - `viral_scorecard`: Momentum, social proof, narrative cohesion, anti-gaming penalty
 - `influencer_map`: Top pushers + authenticity scores
@@ -157,13 +195,14 @@ The endpoint returns a `CultureCardResponse` with:
 - Evidence-backed source snippets instead of synthetic social proof
 - Deterministic fallback when social credentials are absent
 - Social evidence is now threaded into `influencer_map` and `meta.social_data_source`
+- Source diagnostics now distinguish successful zero-result searches from integration failures
 
-### Phase 4: Originality + Genealogy Upgrade (Next)
+### Phase 4: Originality + Genealogy Upgrade ✅
 
-- Replace purely deterministic genealogy with evidence-backed lineage scoring
-- Add clone detection across names, slogans, motifs, imagery, and creator reuse
-- Add originality score and ancestry confidence to the API response
-- Distinguish original launch, remix, revival, and low-effort derivative
+- Added evidence-backed deterministic lineage scoring using motif/family and source-behavior signals
+- Added clone-risk heuristics across naming hints, concentration, account diversity, and creator reuse signal
+- Added originality score and ancestry confidence to API response
+- Added launch-type classification (`original-launch`, `remix`, `revival`, `low-effort-derivative`)
 
 ### Phase 5: Cross-Lingual Narrative Intelligence (Planned)
 
@@ -171,13 +210,20 @@ The endpoint returns a `CultureCardResponse` with:
 - Identify narrative drift between communities
 - Generate short "what EN sees vs what CN sees" summaries
 
-### Phase 6: UI Flow (Planned)
+### Phase 6: UI Flow (In Progress)
 
-- CultureCardPage.tsx with CA input
-- Loading state during API call
-- Rendered card display
-- Dedicated sections for lineage, originality, and spread evidence
-- Share actions (copy link, export image)
+- TypeScript React page with CA + chain input
+- Loading/error states for API calls
+- Live Culture Card rendering from API response
+- Local API proxy wiring for dev workflow
+- Share/export workflow remains pending
+
+### Phase 8: Containerized Deployment ✅
+
+- Dockerized API service
+- Dockerized TypeScript web frontend
+- Optional XMCP sidecar service for local deployment
+- Compose-based orchestration for easy local deployment
 
 ### Phase 7: Image Export (Planned)
 

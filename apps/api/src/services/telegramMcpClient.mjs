@@ -70,9 +70,16 @@ async function resolveTelegramLaunch(command, args) {
   const pythonLike = /^python(\d+(\.\d+)?)?$/i.test(command || "");
   const scriptArg = Array.isArray(args) ? args[0] : null;
 
-  if (pythonLike && typeof scriptArg === "string" && scriptArg.endsWith("main.py")) {
+  if (
+    pythonLike &&
+    typeof scriptArg === "string" &&
+    scriptArg.endsWith("main.py")
+  ) {
     const telegramDir = path.dirname(scriptArg);
-    const wrapperPath = path.join(path.dirname(telegramDir), "start-telegram-mcp.sh");
+    const wrapperPath = path.join(
+      path.dirname(telegramDir),
+      "start-telegram-mcp.sh",
+    );
     try {
       await access(wrapperPath);
       return { command: wrapperPath, args: [] };
@@ -82,6 +89,14 @@ async function resolveTelegramLaunch(command, args) {
   }
 
   return { command, args };
+}
+
+function getDefaultTelegramArgs(command) {
+  if (typeof command === "string" && /\.sh$/i.test(command.trim())) {
+    return [];
+  }
+
+  return ["run", "main.py"];
 }
 
 function mergeEnvWithNonEmptyOverrides(baseEnv, overrideEnv) {
@@ -137,7 +152,7 @@ function parseSearchGlobalText(text) {
       date: dateMatch?.[1]?.trim() || null,
       message: messageMatch?.[1]?.trim() || "",
     };
-  });
+  }).filter((item) => item.date || item.message);
 }
 
 function parseToolPayload(toolResult) {
@@ -182,7 +197,7 @@ async function getTelegramMcpContext() {
     const command = process.env.TELEGRAM_MCP_COMMAND || "uv";
     const args = process.env.TELEGRAM_MCP_ARGS
       ? process.env.TELEGRAM_MCP_ARGS.split(" ").filter(Boolean)
-      : ["run", "main.py"];
+      : getDefaultTelegramArgs(command);
     const launch = await resolveTelegramLaunch(command, args);
     const workingDirectory = getTelegramMcpWorkingDirectory(args);
     const serverEnvFile = workingDirectory ? `${workingDirectory}/.env` : null;

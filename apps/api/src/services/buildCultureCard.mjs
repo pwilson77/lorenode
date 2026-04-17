@@ -32,6 +32,7 @@ async function fetchBscTokenMetadata(ca) {
       name: source.ContractName || null,
       symbol: null,
       createdAt: null,
+      creator_address: source.ContractCreator || null,
       source,
     };
   } catch (error) {
@@ -83,6 +84,7 @@ export async function buildCultureCardPayload(request) {
   let tokenName = null;
   let tokenSymbol = null;
   let logoUrl = null;
+  let creatorAddress = null;
   let metadataSource = "fallback";
 
   const mcpMetadata = await fetchTokenMetadataFromBnbMcp(ca, chainId || "bsc");
@@ -96,6 +98,7 @@ export async function buildCultureCardPayload(request) {
     const bscMetadata = await fetchBscTokenMetadata(ca);
     if (bscMetadata?.name) {
       tokenName = bscMetadata.name;
+      creatorAddress = bscMetadata.creator_address;
       metadataSource = "bscscan";
       const cgData = await fetchCoinGeckoPrice(bscMetadata.name);
       if (cgData) {
@@ -114,12 +117,18 @@ export async function buildCultureCardPayload(request) {
     metadataSource = "fallback";
   }
 
-  const genealogy = buildGenealogy({ ca, symbol: tokenSymbol });
   const influencerMap = await buildInfluencerMap({
     ca,
     tokenSymbol,
     tokenName,
     lookbackSec: socialLookbackSec,
+  });
+  const genealogy = buildGenealogy({
+    ca,
+    symbol: tokenSymbol,
+    tokenName,
+    influencerMap,
+    creatorAddress,
   });
   const lore = await buildLore({
     genealogy,
@@ -166,7 +175,7 @@ export async function buildCultureCardPayload(request) {
       aspect_ratio: "4:5",
     },
     meta: {
-      schema_version: "1.1.0",
+      schema_version: "1.2.0",
       request_id: `req_${seed.toString(16)}`,
       metadata_source: metadataSource,
       social_data_source:

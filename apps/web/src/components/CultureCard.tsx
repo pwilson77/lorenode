@@ -30,6 +30,24 @@ export function CultureCard({ data }: CultureCardProps) {
       </header>
 
       <LineageRibbon data={data} />
+
+      {data.genealogy.originality ? (
+        <section className="mb-4 rounded-2xl border border-orange-200/70 bg-white/70 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-700">
+              Originality Intelligence
+            </p>
+            <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-bold text-orange-800">
+              {data.genealogy.originality.score}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-zinc-700">
+            {data.genealogy.launch_classification || "unknown"} • {" "}
+            {data.genealogy.originality.label}
+          </p>
+        </section>
+      ) : null}
+
       <LoreBlurb data={data} />
       <ViralDialRow data={data} />
       <InfluencerProofChips data={data} />

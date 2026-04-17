@@ -1,0 +1,12 @@
+.git
+.gitmodules
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.tsbuildinfo
+apps/api/.env
+dependencies/mcp-servers/xmcp/.env
+dependencies/mcp-servers/telegram-mcp/.env

@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - ./apps/api/.env
+    environment:
+      PORT: 8787
+      X_MCP_URL: http://x-mcp:8000/mcp
+      TELEGRAM_MCP_COMMAND: /workspace/dependencies/mcp-servers/start-telegram-mcp.sh
+      TELEGRAM_SESSION_NAME: /workspace/dependencies/mcp-servers/telegram-mcp/sessions/telegram_session
+    volumes:
+      - ./dependencies/mcp-servers/telegram-mcp/.env:/workspace/dependencies/mcp-servers/telegram-mcp/.env:ro
+      - telegram-session:/workspace/dependencies/mcp-servers/telegram-mcp/sessions
+    ports:
+      - "8787:8787"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+  x-mcp:
+    build:
+      context: ./dependencies/mcp-servers/xmcp
+      dockerfile: Dockerfile
+    env_file:
+      - ./dependencies/mcp-servers/xmcp/.env
+    ports:
+      - "8000:8000"
+    profiles: ["social"]
+
+volumes:
+  telegram-session:

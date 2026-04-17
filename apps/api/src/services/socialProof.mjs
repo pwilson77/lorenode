@@ -74,8 +74,7 @@ async function fetchXSignals({ ca, tokenSymbol, tokenName, lookbackSec }) {
     process.env.TWITTER_BEARER_TOKEN ||
     process.env.X_BEARER_TOKEN ||
     process.env.TWITTER_API_BEARER_TOKEN;
-  const xApiBaseUrl =
-    process.env.X_API_BASE_URL?.trim() || "https://api.x.com";
+  const xApiBaseUrl = process.env.X_API_BASE_URL?.trim() || "https://api.x.com";
 
   if (!useXMcp && !bearerToken) {
     return {
@@ -342,7 +341,7 @@ async function fetchTelegramSignals({
         pageSize: 20,
       });
 
-      if (Array.isArray(messages) && messages.length > 0) {
+      if (Array.isArray(messages)) {
         const pushers = aggregateTelegramMessages(messages, lookbackSec);
         if (pushers.length > 0) {
           return {
@@ -360,6 +359,16 @@ async function fetchTelegramSignals({
             },
           };
         }
+
+        return {
+          pushers: [],
+          evidenceRefs: [],
+          stats: {
+            mentions: 0,
+            unique_accounts: 0,
+            source: "telegram-mcp",
+          },
+        };
       }
     } catch (error) {
       console.warn("Telegram MCP signal fetch failed:", error.message);

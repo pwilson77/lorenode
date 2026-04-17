@@ -10,6 +10,7 @@ export interface CultureCardResponse {
   genealogy: {
     primary_family: string;
     confidence: number;
+    ancestry_confidence?: number;
     ancestor_tokens: Array<{
       ca: string;
       symbol: string;
@@ -18,6 +19,23 @@ export interface CultureCardResponse {
     }>;
     motif_tags: string[];
     slogan_fingerprints: string[];
+    launch_classification?:
+      | "original-launch"
+      | "remix"
+      | "revival"
+      | "low-effort-derivative";
+    originality?: {
+      score: number;
+      label: string;
+      clone_probability: number;
+      creator_reuse_signal: number;
+      heuristic_breakdown: Array<{
+        factor: string;
+        impact: number;
+      }>;
+    };
+    creator_fingerprint?: string | null;
+    lineage_evidence?: string[];
   };
   lore: {
     summary_2_sentences: string;

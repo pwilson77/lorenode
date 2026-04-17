@@ -76,12 +76,14 @@ export async function searchRecentPostsViaXMcp({ query, maxResults = 10 }) {
       return null;
     }
 
+    const boundedMaxResults = Math.max(10, Math.min(100, Number(maxResults) || 10));
+
     const { client } = context;
     const result = await client.callTool({
       name: "searchPostsRecent",
       arguments: {
         query,
-        max_results: maxResults,
+        max_results: boundedMaxResults,
         "tweet.fields": ["created_at", "public_metrics", "lang"],
         expansions: ["author_id"],
         "user.fields": ["username", "verified", "public_metrics", "created_at"],
