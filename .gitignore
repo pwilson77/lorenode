@@ -1,0 +1,5 @@
+apps/api/node_modules/
+apps/api/.env
+dependencies/mcp-servers/*/.env
+dependencies/mcp-servers/*/.env.*
+!dependencies/mcp-servers/*/.env.example

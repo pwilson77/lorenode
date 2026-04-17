@@ -1,0 +1,6 @@
+[submodule "dependencies/mcp-servers/xmcp"]
+	path = dependencies/mcp-servers/xmcp
+	url = https://github.com/xdevplatform/xmcp.git
+[submodule "dependencies/mcp-servers/telegram-mcp"]
+	path = dependencies/mcp-servers/telegram-mcp
+	url = https://github.com/chigwell/telegram-mcp.git
